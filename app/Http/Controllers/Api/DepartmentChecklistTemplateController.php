@@ -15,6 +15,7 @@ class DepartmentChecklistTemplateController extends Controller
         $validated = $request->validate([
             'checklist_type' => 'required|string|in:ONBOARDING,CLEARANCE',
             'department_id' => 'nullable|integer|exists:departments,id',
+            'latest_only' => 'nullable|boolean',
         ], [
             'checklist_type.required' => 'Please specify which checklist to load (ONBOARDING or CLEARANCE).',
             'checklist_type.in' => 'Checklist type must be either ONBOARDING or CLEARANCE.',
@@ -32,9 +33,20 @@ class DepartmentChecklistTemplateController extends Controller
 
         $rows = $query->orderBy('updated_at', 'desc')->get();
 
+        if (!empty($validated['latest_only'])) {
+            $rows = $rows
+                ->groupBy('department_id')
+                ->map(fn ($group) => $group->sortByDesc('updated_at')->first())
+                ->values();
+        }
+
         $data = $rows->map(fn ($template) => $this->transform($template));
 
-        return response()->json(['data' => $data]);
+        return response()
+            ->json(['data' => $data])
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function upsert(Request $request)
