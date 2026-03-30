@@ -530,8 +530,8 @@ class EmployeeController extends Controller
                     'status' => 'completed',
                 ]);
 
-                // Set employee status to pending until clearance is done.
-                $employee->update(['status' => 'resignation_pending']);
+                // Clearance is no longer part of the resignation flow.
+                $employee->update(['status' => 'resigned']);
                 $this->activityLogService->logEmployeeResigned($employee, $resigned, null, $request);
 
                 return response()->json([
@@ -579,8 +579,8 @@ class EmployeeController extends Controller
                 })->afterResponse();
             }
 
-            // Update employee status to termination_pending until clearance is complete
-            $employee->update(['status' => 'termination_pending']);
+            // Clearance is no longer part of the termination flow.
+            $employee->update(['status' => 'terminated']);
 
             // Log activity
             $this->activityLogService->logEmployeeTerminated($employee, $termination, null, $request);
