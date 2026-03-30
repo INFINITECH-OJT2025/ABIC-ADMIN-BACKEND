@@ -10,9 +10,36 @@ use App\Http\Controllers\Api\HiringController;
 use App\Http\Controllers\Api\OnboardingChecklistController;
 use App\Http\Controllers\Api\OfficeSupplyInventoryController;
 use App\Http\Controllers\Api\DepartmentChecklistTemplateController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EvaluationController;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
+
+RateLimiter::for('auth', function (Request $request) {
+    return Limit::perMinute(5)->by((string) $request->ip())->response(function () {
+        return response()->json([
+            'success' => false,
+            'message' => 'Too many authentication attempts. Please try again later.',
+            'errors' => null,
+            'retry_after' => 60,
+        ], 429);
+    });
+});
+
+Route::middleware(['throttle:auth'])->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::get('/login', [AuthController::class, 'loginInfo'])->name('login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+});
+
+Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/change-password', [AuthController::class, 'changePassword']);
+});
 
 
 Route::get('/user', function (Request $request) {
