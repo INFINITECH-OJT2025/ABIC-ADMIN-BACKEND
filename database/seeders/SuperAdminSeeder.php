@@ -93,3 +93,4 @@ class SuperAdminSeeder extends Seeder
         }
     }
 }
+
